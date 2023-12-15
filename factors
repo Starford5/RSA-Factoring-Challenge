@@ -1,46 +1,49 @@
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
-#include <string.h>
+#!/usr/bin/env bash
+# is a factors challenge
 
-int main(int argc, char *argv[])
+check_factor()
 {
-	FILE *stream;
-	char *line = NULL;
-	size_t len = 0;
-	long long flag = 1, div, rest, number, counter;
-	ssize_t nread;
+	if [ $# -ne 3 ];
+        then
+                args=("$@")
+                count=0
+                num2=1
+                for a in ${args[*]};
+                do
+                        if [ $count -gt 1 ];
+                        then
+                                num2=$(echo $a*$num2 | bc)
+                        fi
+                        count=$((count + 1))
+                done
+        else
+                num2=$3
+        fi
 
-	if (argc != 2) {
-		fprintf(stderr, "Usage: %s <file>\n", argv[0]);
-		exit(EXIT_FAILURE);
-	}
+        num1=$2
+        num=$(echo "$1" | tr ':' '=')
 
-	stream = fopen(argv[1], "r");
-	if (stream == NULL) {
-		perror("fopen");
-		exit(EXIT_FAILURE);
-	}
+        result=$(echo "if($num2 > $num1) 1 else 0" | bc)
+	        if ((result == 1)); then
+		        numcp=$num1
+		        num1=$num2
+		        num2=$numcp
+                fi
 
-	while ((nread = getline(&line, &len, stream)) != -1) {
-		flag = 1, div = 2;
-		number = atoll(line);
-		while (flag) {
-			rest = number % div;
-			if (!rest) {
-				counter = number / div;
-				printf("%lld=%lld*%lld\n", number, counter, div);
-				flag = 0;
-			}
-			div++;
-		}
-	}
-
-	free(line);
-	fclose(stream);
-	exit(EXIT_SUCCESS);
+        echo "$num$num1*$num2"
 }
+
+if [ $# -ne 1 ]
+then
+        echo 'Usage: factors <file>'
+        exit 1
+else
+
+        while read i
+        do
+
+                result=$(factor "$i")
+                check_factor $result
+
+        done < "$1"
+fi
